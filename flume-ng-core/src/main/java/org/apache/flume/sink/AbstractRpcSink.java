@@ -212,12 +212,21 @@ public abstract class AbstractRpcSink extends AbstractSink implements Configurab
             "initialized. " + getName() + " could not be started");
         sinkCounter.incrementConnectionCreatedCount();
         if (cxnResetInterval > 0) {
-          cxnResetExecutor.schedule(new Runnable() {
+          class RestCxnTask implements Runnable {
+            private AtomicBoolean resetConnectionFlag;
+
+            RestCxnTask(AtomicBoolean resetConnectionFlag) {
+              this.resetConnectionFlag = resetConnectionFlag;
+            }
+
             @Override
             public void run() {
               resetConnectionFlag.set(true);
             }
-          }, cxnResetInterval, TimeUnit.SECONDS);
+          }
+
+          cxnResetExecutor.schedule(new RestCxnTask(resetConnectionFlag),
+              cxnResetInterval, TimeUnit.SECONDS);
         }
       } catch (Exception ex) {
         sinkCounter.incrementConnectionFailedCount();
